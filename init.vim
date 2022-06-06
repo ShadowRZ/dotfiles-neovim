@@ -56,3 +56,23 @@ function! LightlineFilename()
   let modified = &modified ? ' +' : ''
   return filename . modified
 endfunction
+
+" Tree Sitter
+if executable("tree-sitter")
+    packadd! nvim-treesitter
+    lua << EOF
+    require("nvim-treesitter.install").prefer_git = true
+    require('nvim-treesitter.configs').setup {
+        highlight = {
+            enable = true,
+            },
+        incremental_selection = {
+            enable = true,
+            },
+        indent = {
+            enable = true,
+            }
+        }
+EOF
+endif
+
