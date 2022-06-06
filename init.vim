@@ -38,3 +38,21 @@ augroup filetypedetect
     autocmd BufRead,BufNewFile *mutt-* setfiletype mail
     autocmd BufRead,BufNewFile *mutt-* set tw=72
 augroup END
+
+" Lightline
+let g:lightline = {
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ],
+      \             [ 'readonly', 'filename' ] ],
+      \   'right': [],
+      \ },
+      \ 'component_function': {
+      \   'filename': 'LightlineFilename',
+      \ },
+      \ }
+
+function! LightlineFilename()
+  let filename = expand('%:t') !=# '' ? expand('%:t') : '[No Name]'
+  let modified = &modified ? ' +' : ''
+  return filename . modified
+endfunction
