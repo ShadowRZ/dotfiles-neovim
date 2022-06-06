@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/tpope/vim-commentary
+	branch = master
+	commit = 3654775824337f466109f00eaf6759760f65be34
+	parent = c74f611a740b5adef8ee0bf2afd8909d1b8e2070
+	method = merge
+	cmdver = 0.4.3
