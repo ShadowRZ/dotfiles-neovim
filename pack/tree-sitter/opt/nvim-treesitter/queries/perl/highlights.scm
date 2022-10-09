@@ -83,15 +83,16 @@
 
 ; Comments are comments
 (comments) @comment
+(comments) @spell
 
 ; POD should be handled specially with its own embedded subtype but for now
 ;   we'll just have to do this.
 (pod_statement) @text
 
 (method_invocation
-  function_name: (identifier) @method)
+  function_name: (identifier) @method.call)
 (call_expression
-  function_name: (identifier) @function)
+  function_name: (identifier) @function.call)
 
 ;; ----------
 

@@ -129,7 +129,7 @@
 (identifier) @variable
 
 ((identifier) @variable.builtin
- (#match? @variable.builtin "self"))
+ (#eq? @variable.builtin "self"))
 
 ;; Constants
 
@@ -161,10 +161,10 @@
 
 (parameters (identifier) @parameter)
 
-(function_call name: (identifier) @function)
+(function_call name: (identifier) @function.call)
 (function_declaration name: (identifier) @function)
 
-(function_call name: (dot_index_expression field: (identifier) @function))
+(function_call name: (dot_index_expression field: (identifier) @function.call))
 (function_declaration name: (dot_index_expression field: (identifier) @function))
 
 (method_index_expression method: (identifier) @method)
@@ -180,13 +180,13 @@
 
 ;; Others
 
-(comment) @comment
+(comment) @comment @spell
 
 (hash_bang_line) @comment
 
 (number) @number
 
-(string) @string
+(string) @string @spell
 
 ;; Error
 (ERROR) @error

@@ -149,13 +149,13 @@
 
 ; function()
 (call_expression
-	. (simple_identifier) @function)
+	. (simple_identifier) @function.call)
 
 ; object.function() or object.property.function()
 (call_expression
 	(navigation_expression
 		(navigation_suffix
-			(simple_identifier) @function) . ))
+			(simple_identifier) @function.call) . ))
 
 (call_expression
 	. (simple_identifier) @function.builtin
@@ -211,6 +211,8 @@
 	(comment)
 	(shebang_line)
 ] @comment
+
+(comment) @spell
 
 (real_literal) @float
 [

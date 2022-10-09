@@ -80,7 +80,7 @@ local function get_revision(lang)
 end
 
 local function get_installed_revision(lang)
-  local lang_file = utils.join_path(utils.get_parser_info_dir(), lang .. ".revision")
+  local lang_file = utils.join_path(configs.get_parser_info_dir(), lang .. ".revision")
   if vim.fn.filereadable(lang_file) == 1 then
     return vim.fn.readfile(lang_file)[1]
   end
@@ -242,10 +242,14 @@ local function run_install(cache_folder, install_folder, lang, repo, with_sync, 
   if from_local_path then
     compile_location = repo.url
   else
-    local repo_location = string.gsub(repo.location or project_name, "/", path_sep)
-    compile_location = cache_folder .. path_sep .. repo_location
+    local repo_location = project_name
+    if repo.location then
+      repo_location = repo_location .. "/" .. repo.location
+    end
+    repo_location = repo_location:gsub("/", path_sep)
+    compile_location = utils.join_path(cache_folder, repo_location)
   end
-  local parser_lib_name = install_folder .. path_sep .. lang .. ".so"
+  local parser_lib_name = utils.join_path(install_folder, lang) .. ".so"
 
   generate_from_grammar = repo.requires_generate_from_grammar or generate_from_grammar
 
@@ -329,7 +333,7 @@ local function run_install(cache_folder, install_folder, lang, repo, with_sync, 
     shell.select_mv_cmd("parser.so", parser_lib_name, compile_location),
     {
       cmd = function()
-        vim.fn.writefile({ revision or "" }, utils.join_path(utils.get_parser_info_dir(), lang .. ".revision"))
+        vim.fn.writefile({ revision or "" }, utils.join_path(configs.get_parser_info_dir(), lang .. ".revision"))
       end,
     },
     { -- auto-attach modules after installation
@@ -392,7 +396,7 @@ local function install(options)
       return api.nvim_err_writeln(err)
     end
 
-    local install_folder, err = utils.get_parser_install_dir()
+    local install_folder, err = configs.get_parser_install_dir()
     if err then
       return api.nvim_err_writeln(err)
     end
@@ -419,6 +423,18 @@ local function install(options)
       install_lang(lang, ask, cache_folder, install_folder, with_sync, generate_from_grammar)
     end
   end
+end
+
+function M.setup_auto_install()
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "*" },
+    callback = function()
+      local lang = parsers.get_buf_lang()
+      if parsers.get_parser_configs()[lang] and not is_installed(lang) then
+        install() { lang }
+      end
+    end,
+  })
 end
 
 function M.update(options)
@@ -459,11 +475,6 @@ function M.update(options)
 end
 
 function M.uninstall(...)
-  local path_sep = "/"
-  if fn.has "win32" == 1 then
-    path_sep = "\\"
-  end
-
   if vim.tbl_contains({ "all" }, ...) then
     reset_progress_counter()
     local installed = info.installed_parsers()
@@ -473,17 +484,52 @@ function M.uninstall(...)
   elseif ... then
     local languages = vim.tbl_flatten { ... }
     for _, lang in ipairs(languages) do
-      local install_dir, err = utils.get_parser_install_dir()
+      local install_dir, err = configs.get_parser_install_dir()
       if err then
         return api.nvim_err_writeln(err)
       end
 
-      local parser_lib = install_dir .. path_sep .. lang .. ".so"
+      if vim.tbl_contains(configs.get_ensure_installed_parsers(), lang) then
+        vim.notify(
+          "Uninstalling "
+            .. lang
+            .. '. But the parser is still configured in "ensure_installed" setting of nvim-treesitter.'
+            .. " Please consider updating your config!",
+          vim.log.levels.ERROR
+        )
+      end
 
-      local command_list = {
-        shell.select_rm_file_cmd(parser_lib, "Uninstalling parser for " .. lang),
-      }
-      M.iter_cmd(command_list, 1, lang, "Treesitter parser for " .. lang .. " has been uninstalled")
+      local parser_lib = utils.join_path(install_dir, lang) .. ".so"
+      local all_parsers = vim.api.nvim_get_runtime_file("parser/" .. lang .. ".so", true)
+      if vim.fn.filereadable(parser_lib) == 1 then
+        local command_list = {
+          shell.select_rm_file_cmd(parser_lib, "Uninstalling parser for " .. lang),
+          {
+            cmd = function()
+              local all_parsers_after_deletion = vim.api.nvim_get_runtime_file("parser/" .. lang .. ".so", true)
+              if #all_parsers_after_deletion > 0 then
+                vim.notify(
+                  "Tried to uninstall parser for "
+                    .. lang
+                    .. "! But the parser is still installed (not by nvim-treesitter)."
+                    .. " Please delete the following files manually: "
+                    .. table.concat(all_parsers_after_deletion, ", "),
+                  vim.log.levels.ERROR
+                )
+              end
+            end,
+          },
+        }
+        M.iter_cmd(command_list, 1, lang, "Treesitter parser for " .. lang .. " has been uninstalled")
+      elseif #all_parsers > 0 then
+        vim.notify(
+          "Parser for "
+            .. lang
+            .. " is installed! But not by nvim-treesitter! Please manually remove the following files: "
+            .. table.concat(all_parsers, ", "),
+          vim.log.levels.ERROR
+        )
+      end
     end
   end
 end
