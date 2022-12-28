@@ -57,12 +57,14 @@ function! LightlineFilename()
   return filename . modified
 endfunction
 
+" Depolete
+call deoplete#enable()
+
 " Tree Sitter
 if executable("tree-sitter")
     packadd! nvim-treesitter
     lua << EOF
-    require("nvim-treesitter.install").prefer_git = true
-    require('nvim-treesitter.configs').setup {
+    require("nvim-treesitter.configs").setup {
         highlight = {
             enable = true,
             },
@@ -75,4 +77,3 @@ if executable("tree-sitter")
         }
 EOF
 endif
-
